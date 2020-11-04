@@ -1,0 +1,33 @@
+type included := yes | no
+included [ @set1, @set2, @set3, @set4, @set5, @set6 ] : c
+
+minimize {
+	1: @set1 == yes
+	1: @set2 == yes
+	1: @set3 == yes
+	1: @set4 == yes
+	1: @set5 == yes
+	1: @set6 == yes
+}
+
+# set1 = [element1, element2]
+# set2 = [element1, element2]
+# set3 = [element2, element3]
+# set4 = [element3, element4]
+# set5 = [element3]
+# set6 = [element4]
+
+# element1 is in set1 and set2
+@set1 != no || @set2 != no
+
+# element2 is in set1, set2 and set3
+@set1 != no || @set2 != no || @set3 != no
+
+# element3 is in set3, set4 and set5
+@set3 != no || @set4 != no || @set5 != no
+
+# element4 is in set4 and set6
+@set4 != no || @set6 != no
+
+solve(c)
+print(c)

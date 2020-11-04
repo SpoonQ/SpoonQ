@@ -1,0 +1,20 @@
+[package]
+authors = ["Yasuo Ozu <yasuo@ozu.email>"]
+name = "spoon_q"
+version = "0.0.0"
+edition = "2018"
+publish = false
+readme = "README.md"
+license = "UNLICENSED"
+description = "A programming language for annealing machine"
+
+[lib]
+edition = "2018"
+
+[dependencies]
+clap = "2.31.2"
+lazy_static = "1.4.0"
+termcolor = "1.1.0"
+serde_json = "1.0"
+# rustqubo = { path = "rustqubo" }
+rustqubo = { git = "https://github.com/SpoonQ/rustqubo.git", branch = "main" }

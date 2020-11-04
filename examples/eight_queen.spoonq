@@ -1,0 +1,5 @@
+type location := 1 .. 5
+location [@c1, @c2, @c3, @c4, @c5] : rows
+different(rows)
+solve(rows)
+print(rows)

@@ -1,0 +1,47 @@
+type bool := yes | no
+bool [ @v1, @v2, @v3, @v4, @v5, @v6, @v7, @v8 ] : subsets
+
+# O : joint, X : disjoint
+# 1 2 3 4 5 6 7 8 v
+#   X X O X O X X 1
+#     X X O X X O 2
+#       X X X O X 3
+#         O X X O 4
+#           X O X 5
+#             X X 6
+#               O 7
+
+@v1 != yes || @v4 != yes
+@v1 != yes || @v6 != yes
+@v2 != yes || @v5 != yes
+@v2 != yes || @v8 != yes
+@v3 != yes || @v7 != yes
+@v4 != yes || @v5 != yes
+@v4 != yes || @v8 != yes
+@v5 != yes || @v7 != yes
+@v7 != yes || @v8 != yes
+
+maximize {
+	1 : @v1 == yes
+	1 : @v2 == yes
+	1 : @v3 == yes
+	1 : @v4 == yes
+	1 : @v5 == yes
+	1 : @v6 == yes
+	1 : @v7 == yes
+	1 : @v8 == yes
+}
+
+solve(subsets)
+print(subsets)
+
+# output:
+#  @v1 = no
+#  @v2 = no
+#  @v3 = yes
+#  @v4 = no
+#  @v5 = yes
+#  @v6 = yes
+#  @v7 = no
+#  @v8 = yes
+#  energy:  4
