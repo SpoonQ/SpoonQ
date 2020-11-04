@@ -102,7 +102,7 @@ impl DimacsGenerator {
 			}
 			nums.push(n as usize);
 		}
-		let [clauses, values] = [nums[0], nums[1]];
+		let [values, clauses] = [nums[0], nums[1]];
 		let mut ret = Vec::new();
 		for _ in 0..clauses {
 			tknzr.skip_this_line()?; // go to next line
