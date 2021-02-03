@@ -2,6 +2,7 @@ use crate::dimacs::DimacsGenerator;
 use crate::error::Error;
 use crate::resolve::Resolver;
 use crate::token::Tokenizer;
+use std::collections::HashMap;
 
 #[derive(Debug)]
 pub struct CliArgs {
@@ -57,12 +58,21 @@ impl CliArgs {
 	}
 }
 
-fn run_dimacs(tknzr: &mut Tokenizer) -> Result<Vec<(usize, bool)>, Error> {
+fn run_dimacs(
+	tknzr: &mut Tokenizer,
+	use_anneal: bool,
+) -> Result<Option<Vec<(usize, bool)>>, Error> {
 	let cond = DimacsGenerator::generate_cond(tknzr)?;
 	if let Some(cond) = cond {
 		let mut resolver = Resolver::new();
-		Error::show(info!(("Solving using internal solver..."))).unwrap();
-		resolver.resolve(cond, None, None)
+		let heauristics = if use_anneal {
+			Error::show(info!(("Solving using annealer..."))).unwrap();
+			Some(resolver.solve_by_anneal(cond.clone(), None, None)?)
+		} else {
+			None
+		};
+		Error::show(info!(("Solving using sat solver..."))).unwrap();
+		resolver.solve_by_satsolv(cond, None, heauristics)
 	} else {
 		err!(("No input conditionals"))
 	}
@@ -96,11 +106,17 @@ where
 				let mut tknzr = Tokenizer::new(&mut cxt);
 				if DimacsGenerator::test_file(&mut tknzr).unwrap() {
 					Error::show(info!(("Generating clauses from DIMACS file..."))).unwrap();
-					match run_dimacs(&mut tknzr) {
-						Ok(v) => {
-							for (k, v) in v.iter() {
-								println!("{:} = {:}", k, v);
+					match run_dimacs(&mut tknzr, true) {
+						Ok(Some(v)) => {
+							println!("SAT");
+							let m = v.into_iter().collect::<HashMap<_, _>>();
+							for (_k, v) in m.iter() {
+								print!("{:} ", v);
 							}
+							println!("");
+						}
+						Ok(None) => {
+							println!("UNSAT");
 						}
 						Err(e) => {
 							let _ = err.add(e);

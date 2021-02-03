@@ -1,9 +1,11 @@
+extern crate screwsat;
 use crate::cond::Cond;
 use crate::error::Error;
 use crate::optim::{Optim, OptimExpr, OptimStrategy, Qubit};
 use crate::token::TokenInfo;
 use rustqubo::expr::Expr;
 use rustqubo::solve::SimpleSolver;
+use screwsat::solver::{Lit, LitBool, Solver, Status, Var};
 
 pub struct Resolver;
 
@@ -33,6 +35,65 @@ impl Resolver {
 		optim: Option<&Optim>,
 		tinfo: Option<TokenInfo>,
 	) -> Result<Vec<(usize, bool)>, Error> {
+		self.solve_by_anneal(cond.clone(), optim, tinfo.clone())
+			.map(|v| v.into_iter().map(|(i, b, _)| (i, b)).collect())
+	}
+
+	pub fn solve_by_satsolv(
+		&mut self,
+		cond: Cond,
+		_tinfo: Option<TokenInfo>,
+		heauristics: Option<Vec<(usize, bool, usize)>>,
+	) -> Result<Option<Vec<(usize, bool)>>, Error> {
+		let cnf = cond.generate_cnf();
+		let n = cnf
+			.iter()
+			.map(|v| v.iter().map(|i| i.abs() as usize).max().unwrap_or(0))
+			.max()
+			.unwrap_or(0);
+		let input = cnf
+			.into_iter()
+			.map(|v| {
+				v.into_iter()
+					.map(|i| Lit::new(i.abs() as u32, i > 0))
+					.collect()
+			})
+			.collect::<Vec<_>>();
+		let mut solv = Solver::new(n, &input);
+		if let Some(heauristics) = heauristics {
+			for (var, b, p) in heauristics.into_iter() {
+				solv.set_polarity_and_priority(Var(var as u32), b, p);
+			}
+		}
+		if solv.solve(None) == Status::Sat {
+			Ok(Some(
+				solv.models
+					.iter()
+					.enumerate()
+					.map(|(i, b)| {
+						(
+							i + 1,
+							match b {
+								LitBool::True => true,
+								LitBool::False => false,
+								_ => panic!(),
+							},
+						)
+					})
+					.collect(),
+			))
+		} else {
+			// UNSAT
+			Ok(None)
+		}
+	}
+
+	pub fn solve_by_anneal(
+		&mut self,
+		cond: Cond,
+		optim: Option<&Optim>,
+		tinfo: Option<TokenInfo>,
+	) -> Result<Vec<(usize, bool, usize)>, Error> {
 		let cond = cond.collect_andcond();
 		let mut hmlt = cond
 			//.collect_andcond()
@@ -66,13 +127,13 @@ impl Resolver {
 				.iter()
 				.filter_map(|(k, v)| {
 					if let Qubit::Val(i) = k {
-						Some((*i, *v))
+						Some((*i, *v, 0)) // TODO: 0
 					} else {
 						None
 					}
 				})
 				.collect::<Vec<_>>();
-			v.sort_by_key(|(k, _)| *k);
+			v.sort_by_key(|(k, _, _)| *k);
 			Ok(v)
 		} else {
 			fatal!(("Cannot find root"), [tinfo])

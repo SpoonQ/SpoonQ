@@ -18,3 +18,4 @@ termcolor = "1.1.0"
 serde_json = "1.0"
 # rustqubo = { path = "rustqubo" }
 rustqubo = { git = "https://github.com/SpoonQ/rustqubo.git", branch = "main" }
+screwsat = { git = "https://github.com/yasuo-ozu/screwsat.git", branch = "add-heauristics" }

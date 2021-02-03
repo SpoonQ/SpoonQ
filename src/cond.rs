@@ -489,10 +489,10 @@ impl Cond {
 				if let Cond::Or(v) = c {
 					v.into_iter()
 						.map(|c| match c.simplify() {
-							Cond::Val(n) => n as isize,
+							Cond::Val(n) => n as isize + 1,
 							Cond::Not(c) => {
 								if let Cond::Val(n) = *c {
-									-(n as isize)
+									-(n as isize + 1)
 								} else {
 									panic!()
 								}

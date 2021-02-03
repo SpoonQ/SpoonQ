@@ -47,14 +47,14 @@ fn dimacsgenerator_test() {
 	assert_eq!(
 		&cond,
 		&Cond::And(vec![
-			Cond::Or(vec![Cond::Val(1), Cond::Val(2)]),
+			Cond::Or(vec![Cond::Val(0), Cond::Val(1)]),
 			Cond::Or(vec![
-				Cond::Not(Box::new(Cond::Val(1))),
-				Cond::Val(3),
-				Cond::Not(Box::new(Cond::Val(4))),
+				Cond::Not(Box::new(Cond::Val(0))),
+				Cond::Val(2),
+				Cond::Not(Box::new(Cond::Val(3))),
 			]),
-			Cond::Or(vec![Cond::Val(2), Cond::Val(3)]),
-			Cond::Or(vec![Cond::Val(1), Cond::Not(Box::new(Cond::Val(4)))])
+			Cond::Or(vec![Cond::Val(1), Cond::Val(2)]),
+			Cond::Or(vec![Cond::Val(0), Cond::Not(Box::new(Cond::Val(3)))])
 		])
 	);
 	assert_eq!(
@@ -143,7 +143,7 @@ impl DimacsGenerator {
 				} else if n.abs() > values as i32 {
 					return err!(("Invalid number"), [tknzr.get_last_tinfo()]);
 				}
-				let mut val = Cond::Val(n.abs() as usize);
+				let mut val = Cond::Val(n.abs() as usize - 1);
 				if n < 0 {
 					val = Cond::Not(Box::new(val));
 				}
