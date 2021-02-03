@@ -21,7 +21,7 @@ fn generator_test() {
 		let mut tknzr = Tokenizer::new(&mut cxt);
 		((|tknzr: &mut Tokenizer| -> Result<Generator, Error> {
 			let cc = CompoundConstraint::parse(tknzr)?;
-			Generator::new(cc, Resolver::new())
+			Generator::new(cc, Resolver::new(), CliArgs::new())
 		})(&mut tknzr))
 		.unwrap_or_else(|e| {
 			e.describe().unwrap();
