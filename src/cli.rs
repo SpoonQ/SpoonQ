@@ -2,7 +2,6 @@ use crate::dimacs::DimacsGenerator;
 use crate::error::Error;
 use crate::resolve::Resolver;
 use crate::token::Tokenizer;
-use std::collections::HashMap;
 
 #[derive(Debug)]
 pub struct CliArgs {
@@ -109,9 +108,9 @@ where
 					match run_dimacs(&mut tknzr, true) {
 						Ok(Some(v)) => {
 							println!("SAT");
-							let m = v.into_iter().collect::<HashMap<_, _>>();
-							for (_k, v) in m.iter() {
-								print!("{:} ", v);
+							for (k, v) in v.iter() {
+								let k = *k as i32;
+								print!("{:} ", if *v { k + 1 } else { -k - 1 });
 							}
 							println!("");
 						}

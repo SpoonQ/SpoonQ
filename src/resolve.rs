@@ -55,7 +55,7 @@ impl Resolver {
 			.into_iter()
 			.map(|v| {
 				v.into_iter()
-					.map(|i| Lit::new(i.abs() as u32, i > 0))
+					.map(|i| Lit::new(i.abs() as u32 - 1, i > 0))
 					.collect()
 			})
 			.collect::<Vec<_>>();
@@ -72,7 +72,7 @@ impl Resolver {
 					.enumerate()
 					.map(|(i, b)| {
 						(
-							i + 1,
+							i,
 							match b {
 								LitBool::True => true,
 								LitBool::False => false,
