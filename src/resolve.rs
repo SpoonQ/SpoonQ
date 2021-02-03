@@ -1,4 +1,5 @@
 extern crate screwsat;
+use crate::cli::CliArgs;
 use crate::cond::Cond;
 use crate::error::Error;
 use crate::optim::{Optim, OptimExpr, OptimStrategy, Qubit};
@@ -17,7 +18,8 @@ fn resolv_test() {
 		Cond::Not(Box::new(Cond::Val(1))),
 		Cond::Not(Box::new(Cond::Or(vec![Cond::Val(1), Cond::Val(2)]))),
 	]);
-	let ret = rsvr.resolve(cond, None, None).unwrap_or_else(|e| {
+	let args = CliArgs::new();
+	let ret = rsvr.resolve(cond, None, None, &args).unwrap_or_else(|e| {
 		e.describe().unwrap();
 		panic!();
 	});
@@ -34,8 +36,9 @@ impl Resolver {
 		cond: Cond,
 		optim: Option<&Optim>,
 		tinfo: Option<TokenInfo>,
+		args: &CliArgs,
 	) -> Result<Vec<(usize, bool)>, Error> {
-		self.solve_by_anneal(cond.clone(), optim, tinfo.clone())
+		self.solve_by_anneal(cond.clone(), optim, tinfo.clone(), args, false)
 			.map(|v| v.into_iter().map(|(i, b, _)| (i, b)).collect())
 	}
 
@@ -92,7 +95,9 @@ impl Resolver {
 		&mut self,
 		cond: Cond,
 		optim: Option<&Optim>,
-		tinfo: Option<TokenInfo>,
+		_tinfo: Option<TokenInfo>,
+		args: &CliArgs,
+		is_sat: bool,
 	) -> Result<Vec<(usize, bool, usize)>, Error> {
 		let cond = cond.collect_andcond();
 		let mut hmlt = cond
@@ -112,31 +117,48 @@ impl Resolver {
 			hmlt += optim.get_strategy(&OptimStrategy::Optimize).unwrap();
 		}
 		let compiled = hmlt.compile();
-		let solver = SimpleSolver::new(&compiled);
-		let (_c, qubits, constraints) = solver.solve();
-		if constraints.len() == 0 {
-			let mut v = Vec::new();
-			for i in 0.. {
-				if let Some(b) = qubits.get(&Qubit::Val(i)) {
-					v.push(*b);
-				} else {
-					break;
-				}
-			}
-			let mut v = qubits
-				.iter()
-				.filter_map(|(k, v)| {
-					if let Qubit::Val(i) = k {
-						Some((*i, *v, 0)) // TODO: 0
-					} else {
-						None
-					}
-				})
-				.collect::<Vec<_>>();
-			v.sort_by_key(|(k, _, _)| *k);
-			Ok(v)
-		} else {
-			fatal!(("Cannot find root"), [tinfo])
+		let mut solver = SimpleSolver::new(&compiled);
+		if is_sat {}
+		if let Some(v) = args.iterations {
+			solver.iterations = v;
+		} else if is_sat {
+			solver.iterations = 1;
 		}
+		if let Some(v) = args.generations {
+			solver.generations = v;
+		} else if is_sat {
+			solver.generations = 1;
+		}
+		if let Some(v) = args.beta_count {
+			solver.beta_count = v;
+		}
+		if let Some(v) = args.sweeps_per_beta {
+			solver.sweeps_per_beta = v;
+		}
+		let (_c, qubits, _constraints) = solver.solve();
+		// if constraints.len() == 0 {
+		let mut v = Vec::new();
+		for i in 0.. {
+			if let Some(b) = qubits.get(&Qubit::Val(i)) {
+				v.push(*b);
+			} else {
+				break;
+			}
+		}
+		let mut v = qubits
+			.iter()
+			.filter_map(|(k, v)| {
+				if let Qubit::Val(i) = k {
+					Some((*i, *v, 0)) // TODO: 0
+				} else {
+					None
+				}
+			})
+			.collect::<Vec<_>>();
+		v.sort_by_key(|(k, _, _)| *k);
+		Ok(v)
+		// } else {
+		// 	fatal!(("Cannot find root"), [tinfo])
+		// }
 	}
 }

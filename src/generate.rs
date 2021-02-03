@@ -1,3 +1,4 @@
+use crate::cli::CliArgs;
 use crate::compile::CompoundConstraint;
 use crate::compile::{Command, Expression, ExpressionList, LabelList, Statement};
 use crate::cond::Cond;
@@ -77,10 +78,11 @@ pub struct Generator {
 	conds: Vec<Cond>,
 	optim: Option<OptimExpr>,
 	indexed_vals: Vec<ValSpec>,
+	args: CliArgs,
 }
 
 impl Generator {
-	pub fn new(ast: CompoundConstraint, resolver: Resolver) -> Result<Self, Error> {
+	pub fn new(ast: CompoundConstraint, resolver: Resolver, args: CliArgs) -> Result<Self, Error> {
 		let mut ret = Generator {
 			decls: HashMap::new(),
 			types: HashMap::new(),
@@ -90,6 +92,7 @@ impl Generator {
 			conds: Vec::new(),
 			optim: None,
 			indexed_vals: Vec::new(),
+			args,
 		};
 		let mut err = Error::from_empty_list();
 		for st in ast.children.iter() {
@@ -566,7 +569,9 @@ impl Generator {
 			} else {
 				None
 			};
-			let res = self.resolver.resolve(cond, optim.as_ref(), tinfo)?;
+			let res = self
+				.resolver
+				.resolve(cond, optim.as_ref(), tinfo, &self.args)?;
 			let res = res.into_iter().map(|(_, v)| v).collect::<Vec<_>>();
 			let mut ret = HashMap::new();
 			for hash in filtered_list.iter() {

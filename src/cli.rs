@@ -4,11 +4,15 @@ use crate::resolve::Resolver;
 use crate::token::Tokenizer;
 use std::time::Instant;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct CliArgs {
 	verbose: bool,
 	omit_anneal: bool,
 	infile: Option<String>,
+	pub iterations: Option<usize>,
+	pub generations: Option<usize>,
+	pub beta_count: Option<usize>,
+	pub sweeps_per_beta: Option<usize>,
 }
 
 impl CliArgs {
@@ -17,6 +21,10 @@ impl CliArgs {
 			verbose: false,
 			infile: None,
 			omit_anneal: false,
+			iterations: None,
+			generations: None,
+			beta_count: None,
+			sweeps_per_beta: None,
 		}
 	}
 
@@ -71,6 +79,7 @@ impl CliArgs {
 fn run_dimacs(
 	tknzr: &mut Tokenizer,
 	use_anneal: bool,
+	args: &CliArgs,
 ) -> Result<Option<Vec<(usize, bool)>>, Error> {
 	let cond = DimacsGenerator::generate_cond(tknzr)?;
 	if let Some(cond) = cond {
@@ -78,7 +87,7 @@ fn run_dimacs(
 		let heauristics = if use_anneal {
 			Error::show(info!(("Annealing..."))).unwrap();
 			let t_anneal = Instant::now();
-			let res = resolver.solve_by_anneal(cond.clone(), None, None)?;
+			let res = resolver.solve_by_anneal(cond.clone(), None, None, args, true)?;
 			Error::show(info!(("Annealing ended in {:?}", t_anneal.elapsed()))).unwrap();
 
 			Some(res)
@@ -110,7 +119,7 @@ where
 	let _ = err.adderr(args.read_args(iter));
 	let _ = err.adderr(args.check_args());
 	if err.is_empty() {
-		let fname = &args.infile.unwrap();
+		let fname = &args.infile.clone().unwrap();
 		if args.verbose {
 			Error::show(info!(("Loading file {}", fname))).unwrap();
 		}
@@ -123,7 +132,7 @@ where
 				let mut tknzr = Tokenizer::new(&mut cxt);
 				if DimacsGenerator::test_file(&mut tknzr).unwrap() {
 					Error::show(info!(("Generating clauses from DIMACS file..."))).unwrap();
-					match run_dimacs(&mut tknzr, !args.omit_anneal) {
+					match run_dimacs(&mut tknzr, !args.omit_anneal, &args) {
 						Ok(Some(v)) => {
 							println!("SAT");
 							for (k, v) in v.iter() {
@@ -147,7 +156,7 @@ where
 								eprintln!("{:?}", &cc);
 							}
 							let resolver = Resolver::new();
-							match Generator::new(cc, resolver) {
+							match Generator::new(cc, resolver, args.clone()) {
 								Err(e) => {
 									let _ = err.add(e);
 								}
