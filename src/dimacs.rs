@@ -39,9 +39,10 @@ fn dimacsgenerator_test() {
 	// let mut tknzr = Tokenizer::new(&mut cxt);
 	// assert_eq!(DimacsGenerator::generate_cond(&mut tknzr).unwrap(), None);
 	let mut cxt = Context::new(File::from_string(
-		"p cnf 4 4\n1 2 0\n-1 3 -4 0\n2 3 0\n1 -4 0\n",
+		"c aaa some comments\np cnf 4 4\n1 2 0\n-1 3 -4 0\n2 3 0\n1 -4 0\n",
 	));
 	let mut tknzr = Tokenizer::new(&mut cxt);
+	assert!(DimacsGenerator::test_file(&mut tknzr).unwrap());
 	assert_eq!(
 		DimacsGenerator::generate_cond(&mut tknzr).unwrap(),
 		Some(Cond::And(vec![
@@ -70,6 +71,16 @@ impl DimacsGenerator {
 		let mut stack = Vec::new();
 		let mut i = 0;
 		let magic_tokens = Self::get_magic_tokens();
+		while let Some(token) = tknzr.next_token()? {
+			if token != Token::Ident(TokenIdent(b"c".to_vec(), None)) {
+				tknzr.unget_token(token);
+				break;
+			}
+			stack.push(token);
+			while let Some(token) = tknzr.next_token_inline()? {
+				stack.push(token);
+			}
+		}
 		while i < magic_tokens.len() {
 			let token = tknzr.next_token()?;
 			if let Some(token) = token {
@@ -85,12 +96,25 @@ impl DimacsGenerator {
 		}
 		let ret = i == magic_tokens.len();
 		while let Some(token) = stack.pop() {
+			if ret && token == Token::Ident(TokenIdent(b"p".to_vec(), None)) {
+				tknzr.unget_token(token);
+				break;
+			}
 			tknzr.unget_token(token);
 		}
 		return Ok(ret);
 	}
 
 	pub fn generate_cond(tknzr: &mut Tokenizer) -> Result<Option<Cond>, Error> {
+		while let Some(token) = tknzr.next_token()? {
+			if token != Token::Ident(TokenIdent(b"c".to_vec(), None)) {
+				tknzr.unget_token(token);
+				break;
+			}
+			while let Some(_) = tknzr.next_token_inline()? {
+				// do nothing
+			}
+		}
 		for t in &Self::get_magic_tokens() {
 			tknzr.eat(t.clone())?;
 		}
