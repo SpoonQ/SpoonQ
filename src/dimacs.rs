@@ -43,9 +43,10 @@ fn dimacsgenerator_test() {
 	));
 	let mut tknzr = Tokenizer::new(&mut cxt);
 	assert!(DimacsGenerator::test_file(&mut tknzr).unwrap());
+	let cond = DimacsGenerator::generate_cond(&mut tknzr).unwrap().unwrap();
 	assert_eq!(
-		DimacsGenerator::generate_cond(&mut tknzr).unwrap(),
-		Some(Cond::And(vec![
+		&cond,
+		&Cond::And(vec![
 			Cond::Or(vec![Cond::Val(1), Cond::Val(2)]),
 			Cond::Or(vec![
 				Cond::Not(Box::new(Cond::Val(1))),
@@ -54,11 +55,15 @@ fn dimacsgenerator_test() {
 			]),
 			Cond::Or(vec![Cond::Val(2), Cond::Val(3)]),
 			Cond::Or(vec![Cond::Val(1), Cond::Not(Box::new(Cond::Val(4)))])
-		]))
+		])
 	);
+	assert_eq!(
+		cond.generate_cnf(),
+		vec![vec![1, 2], vec![-1, 3, -4], vec![2, 3], vec![1, -4]]
+	)
 }
 
-pub struct DimacsGenerator {}
+pub struct DimacsGenerator;
 
 impl DimacsGenerator {
 	fn get_magic_tokens() -> [Token; 2] {

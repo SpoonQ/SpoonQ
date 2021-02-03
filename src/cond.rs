@@ -481,7 +481,31 @@ impl Cond {
 		}
 	}
 
-	// pub fn generate_cnf(&self) -> Vec<Vec<i32>> {}
+	pub fn generate_cnf(self) -> Vec<Vec<isize>> {
+		let cond = self.break_countcond_recursive();
+		cond.collect_andcond()
+			.into_iter()
+			.map(|c| {
+				if let Cond::Or(v) = c {
+					v.into_iter()
+						.map(|c| match c.simplify() {
+							Cond::Val(n) => n as isize,
+							Cond::Not(c) => {
+								if let Cond::Val(n) = *c {
+									-(n as isize)
+								} else {
+									panic!()
+								}
+							}
+							_ => panic!(),
+						})
+						.collect()
+				} else {
+					panic!()
+				}
+			})
+			.collect()
+	}
 
 	// pub fn collect_count(&self) -> Self {}
 
