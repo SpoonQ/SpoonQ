@@ -2,10 +2,12 @@ use crate::dimacs::DimacsGenerator;
 use crate::error::Error;
 use crate::resolve::Resolver;
 use crate::token::Tokenizer;
+use std::time::Instant;
 
 #[derive(Debug)]
 pub struct CliArgs {
 	verbose: bool,
+	omit_anneal: bool,
 	infile: Option<String>,
 }
 
@@ -14,6 +16,7 @@ impl CliArgs {
 		Self {
 			verbose: false,
 			infile: None,
+			omit_anneal: false,
 		}
 	}
 
@@ -39,12 +42,20 @@ impl CliArgs {
 					.short("v")
 					.long("verbose"),
 			)
+			.arg(
+				Arg::with_name("omit_anneal")
+					.help("omit annealing before solving problem")
+					.long("omit-anneal"),
+			)
 			.get_matches_from(iter);
 		if let Some(o) = matches.value_of("infile") {
 			self.infile = Some(o.to_string());
 		}
 		if matches.is_present("verbose") {
 			self.verbose = true;
+		}
+		if matches.is_present("omit_anneal") {
+			self.omit_anneal = true;
 		}
 		Ok(())
 	}
@@ -65,13 +76,20 @@ fn run_dimacs(
 	if let Some(cond) = cond {
 		let mut resolver = Resolver::new();
 		let heauristics = if use_anneal {
-			Error::show(info!(("Solving using annealer..."))).unwrap();
-			Some(resolver.solve_by_anneal(cond.clone(), None, None)?)
+			Error::show(info!(("Annealing..."))).unwrap();
+			let t_anneal = Instant::now();
+			let res = resolver.solve_by_anneal(cond.clone(), None, None)?;
+			Error::show(info!(("Annealing ended in {:?}", t_anneal.elapsed()))).unwrap();
+
+			Some(res)
 		} else {
 			None
 		};
-		Error::show(info!(("Solving using sat solver..."))).unwrap();
-		resolver.solve_by_satsolv(cond, None, heauristics)
+		Error::show(info!(("Solving..."))).unwrap();
+		let t_solve = Instant::now();
+		let ret = resolver.solve_by_satsolv(cond, None, heauristics)?;
+		Error::show(info!(("Solve ended in {:?}", t_solve.elapsed()))).unwrap();
+		Ok(ret)
 	} else {
 		err!(("No input conditionals"))
 	}
@@ -105,7 +123,7 @@ where
 				let mut tknzr = Tokenizer::new(&mut cxt);
 				if DimacsGenerator::test_file(&mut tknzr).unwrap() {
 					Error::show(info!(("Generating clauses from DIMACS file..."))).unwrap();
-					match run_dimacs(&mut tknzr, true) {
+					match run_dimacs(&mut tknzr, !args.omit_anneal) {
 						Ok(Some(v)) => {
 							println!("SAT");
 							for (k, v) in v.iter() {
