@@ -11,8 +11,6 @@ pub struct CliArgs {
 	infile: Option<String>,
 	pub iterations: Option<usize>,
 	pub generations: Option<usize>,
-	pub beta_count: Option<usize>,
-	pub sweeps_per_beta: Option<usize>,
 }
 
 impl CliArgs {
@@ -23,8 +21,6 @@ impl CliArgs {
 			omit_anneal: false,
 			iterations: None,
 			generations: None,
-			beta_count: None,
-			sweeps_per_beta: None,
 		}
 	}
 

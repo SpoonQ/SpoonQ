@@ -604,7 +604,7 @@ impl Generator {
 				}
 			};
 			let cond = self.generate_cond(exp)?;
-			let o = OptimExpr::Float(w)
+			let o = OptimExpr::Number(w)
 				* Optim::from_cond(&cond)
 					.get_strategy(&OptimStrategy::InvZeroOrOne)
 					.unwrap();
@@ -623,7 +623,7 @@ impl Generator {
 				}
 			} else {
 				if is_maximize {
-					self.optim = Some(OptimExpr::Number(-1) * optim);
+					self.optim = Some(OptimExpr::Number(-1.0) * optim);
 				} else {
 					self.optim = Some(optim);
 				}

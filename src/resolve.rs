@@ -4,8 +4,8 @@ use crate::cond::Cond;
 use crate::error::Error;
 use crate::optim::{Optim, OptimExpr, OptimStrategy, Qubit};
 use crate::token::TokenInfo;
-use rustqubo::expr::Expr;
 use rustqubo::solve::SimpleSolver;
+use rustqubo::Expr;
 use screwsat::solver::{Lit, LitBool, Solver, Status, Var};
 
 pub struct Resolver;
@@ -112,7 +112,7 @@ impl Resolver {
 						.unwrap(),
 				),
 			})
-			.fold(OptimExpr::Number(0), |e1, e2| e1 + e2);
+			.fold(OptimExpr::Number(0.0), |e1, e2| e1 + e2);
 		if let Some(optim) = optim {
 			hmlt += optim.get_strategy(&OptimStrategy::Optimize).unwrap();
 		}
@@ -129,27 +129,13 @@ impl Resolver {
 		} else if is_sat {
 			solver.generations = 1;
 		}
-		if let Some(v) = args.beta_count {
-			solver.beta_count = v;
-		}
-		if let Some(v) = args.sweeps_per_beta {
-			solver.sweeps_per_beta = v;
-		}
-		let (_c, qubits, _constraints) = solver.solve();
+		let (_c, sol, _constraints) = solver.solve_with_constraints().unwrap();
 		// if constraints.len() == 0 {
-		let mut v = Vec::new();
-		for i in 0.. {
-			if let Some(b) = qubits.get(&Qubit::Val(i)) {
-				v.push(*b);
-			} else {
-				break;
-			}
-		}
-		let mut v = qubits
-			.iter()
-			.filter_map(|(k, v)| {
+		let mut v = sol
+			.keys()
+			.filter_map(|k| {
 				if let Qubit::Val(i) = k {
-					Some((*i, *v, 0)) // TODO: 0
+					Some((*i, sol[k], sol.local_field(k).unwrap() as usize)) // TODO: 0
 				} else {
 					None
 				}
